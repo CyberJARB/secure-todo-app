@@ -1,5 +1,8 @@
 # Secure To-Do App
 
+## Author
+Jose Andres Ruiz Bautista (CyberJARB)
+
 ## Proyecto universitario – Desarrollo Seguro del Ciclo de Vida del Software (S-SDLC)
 
 ---
