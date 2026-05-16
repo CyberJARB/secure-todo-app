@@ -8,6 +8,10 @@ jobs:
   security:
     runs-on: ubuntu-latest
 
+    env:
+      PORT: 3000
+      API_KEY: secure-demo-key
+
     defaults:
       run:
         working-directory: src
