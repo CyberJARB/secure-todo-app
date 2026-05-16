@@ -1,67 +1,55 @@
-// Importa el framework Express para crear La API web
 const express = require("express");
-
-// Helmet a¤adecabeceras HTTP seguras para proteger la aplicacion 
 const helmet = require("helmet");
-
-// MiddLeware para Limitar peticiones y evitar abuso/bruteforce
 const rateLimit = require("express-rate-limit");
-
-// Joi se usa para validar entradas del usuario
 const Joi = require("joi");
-
-// Carga variables de entorno desde archivo .env
 require("dotenv").config();
 
-
-// Inicializa la aplicacion Express
 const app = express();
-
-// Define el puerto desde variable de entorno o usa 3000 por defecto
 const PORT = process.env.PORT || 3000;
 
-// MiddLeware de seguridad
-
-// Anade cabeceras seguras como:
-// X-Content-Type-Options
-// Content-Security-Policy
-// X-Frame-Options
-
 app.use(helmet());
-
-
-
-// Permite recibir JSON en peticiones HTTP
 app.use(express.json());
 
-// Limita peticiones para prevenir abuso
-app.use(
-  rateLimit({
-    // Ventana de tiempo: 15 minutos & maximo 100 peticipones por IP
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: { error: "TOO many requests" }
-  })
-);
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: "Too many requests" }
+});
 
+app.use(limiter);
 
-// validacion segura de datos & Define que formato debe tener una tarea
+function requireApiKey(req, res, next) {
+  const apiKey = req.header("x-api-key");
+
+  if (!apiKey || apiKey !== process.env.API_KEY) {
+    securityLog("Unauthorized access attempt", req);
+
+    return res.status(401).json({
+      error: "Unauthorized"
+    });
+  }
+
+  next();
+}
+
+function securityLog(event, req) {
+  const timestamp = new Date().toISOString();
+  const ip = req.ip || req.connection.remoteAddress;
+  console.log(`[SECURITY] ${timestamp} | ${event} | IP: ${ip}`);
+}
+
 const taskSchema = Joi.object({
-  // titulo obligatorio, minimo 1 caracter, maximo 100
   title: Joi.string().min(1).max(100).required()
 });
 
-// Base de datos tempotal en memoria 6& // (Solo para esta practica)
 let tasks = [];
 
-// Rutas principal
 app.get("/", (req, res) => {
   res.json({
     message: "Secure To-Do App funcionando"
   });
 });
 
-// endpoint de salud para monitorización
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "healthy",
@@ -69,38 +57,58 @@ app.get("/health", (req, res) => {
   });
 });
 
-
-// Obtener todas las tareas
 app.get("/tasks", (req, res) => {
   res.json(tasks);
 });
 
-
-// Crear nueva tarea 
-app.post("/tasks", (req, res) => {
-  // Valida los datos recibidos & si hay error de validacion
+app.post("/tasks", requireApiKey, (req, res) => {
   const { error } = taskSchema.validate(req.body);
+
   if (error) {
+    securityLog("Invalid task creation attempt", req);
     return res.status(400).json({
       error: error.details[0].message
     });
   }
 
-  // Crear objeto para tarea
   const task = {
     id: tasks.length + 1,
     title: req.body.title,
     completed: false
   };
 
-  // Guardar en memoria
   tasks.push(task);
+  securityLog(`Task created with id ${task.id}`, req);
 
-  // Responder con exito
   res.status(201).json(task);
 });
 
-// Arrancar servidor
+app.delete("/tasks/:id", requireApiKey, (req, res) => {
+  const taskId = Number(req.params.id);
+
+  if (!Number.isInteger(taskId) || taskId <= 0) {
+    securityLog("Invalid task deletion attempt", req);
+    return res.status(400).json({
+      error: "Invalid task id"
+    });
+  }
+
+  const taskExists = tasks.some((task) => task.id === taskId);
+
+  if (!taskExists) {
+    securityLog(`Attempt to delete non-existing task id ${taskId}`, req);
+    return res.status(404).json({
+      error: "Task not found"
+    });
+  }
+
+  tasks = tasks.filter((task) => task.id !== taskId);
+  securityLog(`Task deleted with id ${taskId}`, req);
+
+  res.status(200).json({
+    message: "Task deleted successfully"
+  });
+});
 
 if (require.main === module) {
   app.listen(PORT, () => {

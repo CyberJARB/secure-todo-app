@@ -17,6 +17,7 @@ describe("Secure To-Do App", () => {
   test("POST /tasks debe crear una tarea válida", async () => {
     const res = await request(app)
       .post("/tasks")
+      .set("x-api-key", "secure-demo-key")
       .send({ title: "Prueba S-SDLC" });
 
     expect(res.statusCode).toBe(201);
@@ -26,8 +27,17 @@ describe("Secure To-Do App", () => {
   test("POST /tasks debe rechazar una tarea vacía", async () => {
     const res = await request(app)
       .post("/tasks")
+      .set("x-api-key", "secure-demo-key")
       .send({ title: "" });
 
     expect(res.statusCode).toBe(400);
+  });
+
+  test("POST /tasks debe rechazar peticiones sin API key", async () => {
+    const res = await request(app)
+      .post("/tasks")
+      .send({ title: "Sin API key" });
+
+    expect(res.statusCode).toBe(401);
   });
 });

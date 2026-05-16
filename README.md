@@ -16,6 +16,7 @@ Permite:
 - consultar el estado de salud de la aplicación
 - listar tareas registradas
 - crear nuevas tareas
+- eliminar tareas existentes
 
 La aplicación ha sido diseñada aplicando principios de **Secure Software Development Life Cycle (S-SDLC)**, incorporando controles de seguridad desde las primeras fases del desarrollo.
 
@@ -68,16 +69,66 @@ Este proyecto tiene como objetivo:
 
 ## 4. Endpoints disponibles
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/` | Endpoint principal |
-| GET | `/health` | Estado del servicio |
-| GET | `/tasks` | Obtener listado de tareas |
-| POST | `/tasks` | Crear nueva tarea |
+| Método | Endpoint | Descripción | Protección |
+|--------|----------|-------------|------------|
+| GET | `/` | Endpoint principal | Público |
+| GET | `/health` | Estado del servicio | Público |
+| GET | `/tasks` | Obtener listado de tareas | Público |
+| POST | `/tasks` | Crear nueva tarea | API Key |
+| DELETE | `/tasks/:id` | Eliminar tarea | API Key |
 
 ---
 
-## 5. Cómo ejecutar la aplicación
+## 5. Control de acceso
+
+Siguiendo principios de seguridad y el modelo **Zero Trust**, los endpoints sensibles requieren autenticación explícita mediante API Key.
+
+Endpoints protegidos:
+
+- `POST /tasks`
+- `DELETE /tasks/:id`
+
+Header requerido:
+
+```http
+x-api-key: secure-demo-key
+```
+
+Este enfoque permite aplicar:
+
+- control de acceso básico
+- principio de mínimo privilegio
+- verificación explícita antes de permitir operaciones sensibles
+- enfoque Zero Trust académico
+
+---
+
+## 6. Configuración segura
+
+La aplicación utiliza variables de entorno para separar configuración sensible del código fuente.
+
+Archivo de ejemplo:
+
+```bash
+.env.example
+```
+
+Variables utilizadas:
+
+```env
+PORT=3000
+API_KEY=secure-demo-key
+```
+
+Esto evita:
+
+- credenciales hardcodeadas
+- exposición accidental de configuración sensible
+- malas prácticas de gestión de secretos
+
+---
+
+## 7. Cómo ejecutar la aplicación
 
 ### Clonar repositorio
 
@@ -86,76 +137,124 @@ git clone https://github.com/CyberJARB/secure-todo-app.git
 cd secure-todo-app
 ```
 
+### Crear archivo de configuración
+
+```bash
+cd src
+cp ../.env.example .env
+```
+
+Contenido esperado:
+
+```env
+PORT=3000
+API_KEY=secure-demo-key
+```
+
 ### Ejecutar con Docker
 
 ```bash
 docker compose up --build
 ```
 
-### Verificar funcionamiento
+---
 
-Endpoint principal:
+## 8. Ejemplos de uso
+
+### Endpoint principal
 
 ```bash
 curl http://localhost:3000/
 ```
 
-Health check:
+### Health check
 
 ```bash
 curl http://localhost:3000/health
 ```
 
-Obtener tareas:
+### Obtener tareas
 
 ```bash
 curl http://localhost:3000/tasks
 ```
 
-Crear tarea:
+### Crear tarea
 
 ```bash
 curl -X POST http://localhost:3000/tasks \
 -H "Content-Type: application/json" \
+-H "x-api-key: secure-demo-key" \
 -d '{"title":"Nueva tarea"}'
+```
+
+### Eliminar tarea
+
+```bash
+curl -X DELETE http://localhost:3000/tasks/1 \
+-H "x-api-key: secure-demo-key"
 ```
 
 ---
 
-## 6. Consideraciones de seguridad implementadas
+## 9. Consideraciones de seguridad implementadas
 
 Siguiendo principios de desarrollo seguro, se incorporaron los siguientes controles:
 
+### Protección HTTP
 - **Helmet**
   - protección mediante cabeceras HTTP seguras
 
+### Protección contra abuso
 - **Rate limiting**
   - mitigación frente a abuso del servicio y ataques de denegación
 
-- **Validación de entrada con Joi**
+### Validación de entrada
+- **Joi**
   - prevención de entradas maliciosas o malformadas
 
-- **Gestión de configuración**
-  - uso de variables de entorno mediante `.env`
+### Gestión de configuración
+- **dotenv**
+  - externalización de configuración sensible
 
-- **Análisis de dependencias**
-  - revisión de vulnerabilidades con `npm audit`
+### Control de acceso
+- **API Key middleware**
+  - protección de endpoints sensibles
+  - aplicación de principio de mínimo privilegio
 
-- **Análisis estático**
-  - revisión de calidad y seguridad del código con ESLint
+### Zero Trust básico
+- verificación explícita de solicitudes antes de permitir acciones sensibles
 
-- **Escaneo de contenedor**
-  - análisis de imagen Docker con Trivy
+### Logging / Audit trail
+- registro de:
+  - creación de tareas
+  - intentos inválidos
+  - accesos no autorizados
+  - eliminación de tareas
 
-- **Pruebas dinámicas**
-  - análisis básico de seguridad con OWASP ZAP
+### Seguridad del código
+- **ESLint**
+  - revisión de calidad y buenas prácticas
 
-- **Automatización DevSecOps**
-  - pipeline CI con GitHub Actions
+### Gestión de vulnerabilidades
+- **npm audit**
+  - análisis de dependencias vulnerables
+
+### Seguridad de contenedores
+- **Trivy**
+  - análisis de imagen Docker
+
+### Pruebas dinámicas
+- **OWASP ZAP**
+  - escaneo básico de seguridad
+
+### DevSecOps
+- **GitHub Actions**
+  - pipeline automatizado de validación de seguridad
 
 ---
 
-## 7. Desarrollo del proyecto siguiendo S-SDLC
+## 10. Desarrollo del proyecto siguiendo S-SDLC
 
 ### 1. Requisitos
 
@@ -164,26 +263,39 @@ Se definió una aplicación sencilla de gestión de tareas con funcionalidades b
 - consultar estado
 - listar tareas
 - crear tareas
+- eliminar tareas
 
-También se identificaron riesgos iniciales relacionados con exposición del servicio y validación de entradas.
+Se identificaron riesgos iniciales:
+
+- abuso de endpoints
+- acceso no autorizado
+- validación insuficiente
+- exposición de configuración
 
 Documentación:
-`docs/01-requisitos.md`
+
+```text
+docs/01-requisitos.md
+```
 
 ---
 
 ### 2. Modelado de amenazas
 
-Se analizaron amenazas potenciales como:
+Se analizaron amenazas potenciales:
 
-- denegación de servicio (DoS)
-- manipulación de entradas
+- Denial of Service (DoS)
 - abuso de endpoints públicos
+- acceso no autorizado
+- manipulación de entradas
 - vulnerabilidades en dependencias
 
 Documentación:
-`docs/02-modelado-amenazas.md`
-`security/threat-model.md`
+
+```text
+docs/02-modelado-amenazas.md
+security/threat-model.md
+```
 
 ---
 
@@ -192,92 +304,129 @@ Documentación:
 Se incorporaron decisiones de seguridad desde arquitectura:
 
 - validación de datos
+- middleware de seguridad
 - protección HTTP
 - limitación de peticiones
-- separación de configuración
+- control de acceso
+- externalización de secretos
 
 Documentación:
-`docs/03-diseno-seguro.md`
+
+```text
+docs/03-diseno-seguro.md
+```
 
 ---
 
 ### 4. Implementación segura
 
-Durante el desarrollo se aplicaron prácticas de codificación segura:
+Durante el desarrollo se aplicaron:
 
 - validación estricta
-- dependencias controladas
-- configuración desacoplada
-- middleware de protección
+- middleware defensivo
+- control de acceso
+- logging de seguridad
+- manejo controlado de configuración
 
 Documentación:
-`docs/04-desarrollo-seguro.md`
+
+```text
+docs/04-desarrollo-seguro.md
+```
 
 ---
 
 ### 5. Pruebas de seguridad
 
-Se ejecutaron controles de validación:
+Se ejecutaron:
 
 - pruebas automatizadas con Jest
 - análisis estático con ESLint
-- revisión de dependencias con npm audit
+- auditoría de dependencias con npm audit
 - pruebas dinámicas con OWASP ZAP
 
 Documentación:
-`docs/05-pruebas-seguridad.md`
-`security/npm-audit.md`
-`security/eslint-report.md`
-`security/zap-report.md`
+
+```text
+docs/05-pruebas-seguridad.md
+security/npm-audit.md
+security/eslint-report.md
+security/zap-report.md
+```
 
 ---
 
 ### 6. Despliegue seguro
 
-Se utilizó contenerización y validación del entorno:
+Se aplicaron controles de despliegue:
 
 - Docker
 - Docker Compose
 - escaneo de imagen con Trivy
-- pipeline CI automatizado
+- CI automatizado
 
 Documentación:
-`docs/06-despliegue-seguro.md`
-`security/trivy-scan.md`
+
+```text
+docs/06-despliegue-seguro.md
+security/trivy-scan.md
+```
 
 ---
 
 ### 7. Mantenimiento
 
-Se contemplan medidas de mantenimiento continuo:
+Medidas contempladas:
 
 - actualización de dependencias
+- reevaluación de amenazas
+- mejora continua
 - revisiones periódicas
-- re-evaluación de amenazas
-- mejora continua de seguridad
+- monitorización de seguridad
 
 Documentación:
-`docs/07-mantenimiento.md`
+
+```text
+docs/07-mantenimiento.md
+```
 
 ---
 
-## 8. Estructura del proyecto
+## 11. Estructura del proyecto
 
 ```text
 secure-todo-app/
 ├── docker/
+│   └── Dockerfile
 ├── docs/
+│   ├── 01-requisitos.md
+│   ├── 02-modelado-amenazas.md
+│   ├── 03-diseno-seguro.md
+│   ├── 04-desarrollo-seguro.md
+│   ├── 05-pruebas-seguridad.md
+│   ├── 06-despliegue-seguro.md
+│   └── 07-mantenimiento.md
 ├── security/
+│   ├── checklist-owasp.md
+│   ├── eslint-report.md
+│   ├── npm-audit.md
+│   ├── threat-model.md
+│   ├── trivy-scan.md
+│   └── zap-report.md
 ├── src/
-│   └── __tests__/
+│   ├── __tests__/
+│   ├── package.json
+│   ├── server.js
+│   └── eslint.config.js
 ├── .github/workflows/
 ├── docker-compose.yml
+├── .env.example
 ├── README.md
 ```
 
 ---
 
-## 9. Autoría
+## 12. Autoría
 
 Proyecto desarrollado por:
 
