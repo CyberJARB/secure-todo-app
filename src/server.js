@@ -2,7 +2,9 @@ const express = require("express");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const Joi = require("joi");
-require("dotenv").config();
+if (!process.env.API_KEY  || !process.env.PORT) {
+  requireApiKey("dotenv").config();
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
