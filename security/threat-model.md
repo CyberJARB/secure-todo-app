@@ -1,61 +1,141 @@
 # Modelo de Amenazas - Secure To-Do App
 
 ## Activos protegidos
+
 - Datos de tareas
-- Código fuente de la aplicación
-- Imagen Docker desplegable
-- Configuración del entorno
+- API REST de la aplicación
+- configuración del entorno
+- API Key de autenticación
+- imagen Docker desplegable
+- pipeline CI/CD
+
+---
 
 ## Amenazas identificadas
 
-### 1. Ataques de inyección
+### 1. Acceso no autorizado
+
 Riesgo:
-Entrada maliciosa enviada por el usuario para alterar el comportamiento del sistema.
+
+Un usuario no autenticado intenta crear o eliminar tareas.
+
+Impacto:
+
+- modificación no autorizada de datos
+- pérdida de integridad
 
 Mitigación:
-Validación estricta de entradas mediante Joi.
+
+- middleware requireApiKey
+- validación del header x-api-key
+
+Principios aplicados:
+
+- Zero Trust
+- Least Privilege
 
 ---
 
-### 2. Denegación de servicio (DoS)
+### 2. Ataques de inyección / entrada maliciosa
+
 Riesgo:
-Sobrecarga del servicio mediante múltiples peticiones.
+
+Entrada manipulada enviada por el usuario.
+
+Impacto:
+
+- comportamiento inesperado
+- corrupción lógica
+- errores de aplicación
 
 Mitigación:
-Implementación de rate limiting con express-rate-limit.
+
+- validación estricta mediante Joi
 
 ---
 
-### 3. Exposición por cabeceras inseguras
+### 3. Denegación de servicio (DoS)
+
 Riesgo:
-Ausencia de cabeceras HTTP de seguridad.
+
+Sobrecarga mediante múltiples peticiones automatizadas.
+
+Impacto:
+
+- degradación del servicio
+- indisponibilidad
 
 Mitigación:
-Uso de Helmet para protección automática.
+
+- express-rate-limit
 
 ---
 
-### 4. Dependencias vulnerables
+### 4. Exposición por cabeceras inseguras
+
 Riesgo:
-Bibliotecas de terceros con vulnerabilidades conocidas.
+
+Ausencia de protecciones HTTP estándar.
+
+Impacto:
+
+- mayor superficie de ataque
+- exposición de información
 
 Mitigación:
-Análisis con npm audit y Trivy.
+
+- Helmet
 
 ---
 
-### 5. Escalada de privilegios en contenedor
+### 5. Dependencias vulnerables
+
 Riesgo:
-Mayor impacto si el contenedor se ejecuta como root.
+
+Uso de paquetes externos con vulnerabilidades conocidas.
+
+Impacto:
+
+- ejecución remota
+- compromiso del sistema
 
 Mitigación:
-Configuración Docker con usuario no privilegiado.
+
+- npm audit
+- Trivy
 
 ---
 
-### 6. Fallos en despliegue
+### 6. Escalada de privilegios en contenedor
+
 Riesgo:
+
+Mayor impacto si el contenedor ejecuta como root.
+
+Impacto:
+
+- compromiso del host
+- mayor daño post-explotación
+
+Mitigación:
+
+- usuario no privilegiado en Docker
+
+---
+
+### 7. Fallos en despliegue
+
+Riesgo:
+
 Código inseguro desplegado sin validación.
 
+Impacto:
+
+- propagación de vulnerabilidades
+
 Mitigación:
-Pipeline automatizado con GitHub Actions.
+
+- GitHub Actions CI
+- pruebas automatizadas
+- ESLint
+- ZAP
